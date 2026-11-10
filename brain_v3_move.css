@@ -1,5 +1,5 @@
 @keyframes gRoom{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(0,-3px) rotate(0.5deg)}}
-.scene{animation:gRoom 7s ease-in-out infinite;transform-origin:50% 92%;will-change:transform}
+#picBanner{animation:gRoom 7s ease-in-out infinite;transform-origin:50% 92%;will-change:transform}
 @keyframes gDot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .typing{display:flex;gap:5px;align-items:center}
 .typing span{width:7px;height:7px;border-radius:50%;background:#cfc4ff;display:inline-block;animation:gDot 1.2s infinite}
