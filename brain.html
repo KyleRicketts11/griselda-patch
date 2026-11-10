@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autonomous - Griselda brain core</title>
+<style>
+body{background:#0b0b10;color:#e8e6f0;font-family:monospace;margin:0}
+header{padding:10px;background:#17121f;border-bottom:1px solid #2c2340;display:flex;gap:6px;align-items:center}
+h1{font-size:14px;margin:0;flex:1}
+.tab{padding:6px 10px;border:1px solid #3a2f55;border-radius:8px;font-size:12px;cursor:pointer}
+.tab.on{background:#3a2f55}
+main{padding:10px;max-width:720px;margin:0 auto}
+.card{border:1px solid #2c2340;border-radius:10px;padding:10px;margin:10px 0;background:#12101a}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;color:#cfcbe0;margin:0}
+input,button,textarea{font-family:monospace;font-size:13px;background:#1c1830;color:#e8e6f0;border:1px solid #3a2f55;border-radius:8px;padding:8px}
+textarea{width:100%;box-sizing:border-box}
+.row{display:flex;gap:8px;margin-top:8px}
+.row input{flex:1}
+button{cursor:pointer}
+.log{font-size:11px;color:#9a92b8}
+.grn{color:#7ee787}.ylw{color:#ffd76e}.red{color:#ff7b72}
+</style>
+</head>
+<body>
+<header>
+<h1>griselda brain core</h1>
+<div class="tab on" id="t-chat" onclick="show('chat')">chat</div>
+<div class="tab" id="t-soul" onclick="show('soul')">soul</div>
+<div class="tab" id="t-auto" onclick="show('auto')">autonomy</div>
+</header>
+<div class="card" id="keybox" style="display:none;margin:10px">
+paste your gemini api key once (stays on this phone only):
+<div class="row"><input id="keyin" type="password"><button onclick="savekey()">save</button></div>
+</div>
+<main>
+<section id="v-chat">
+<div class="card"><pre id="chatlog"></pre></div>
+<div class="row"><input id="say" placeholder="talk to griselda"><button onclick="send()">send</button></div>
+</section>
+<section id="v-soul" style="display:none">
+<div class="card"><pre id="soulview"></pre></div>
+<div class="row"><button onclick="wipesoul()">reset soul to default</button></div>
+</section>
+<section id="v-auto" style="display:none">
+<div class="card"><pre id="autolog"></pre></div>
+<div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, reads the page, and writes what she found. keep the tab open for her to stay awake.</div>
+<div class="row"><button onclick="cycle()">run a cycle now</button><button onclick="wipe()">wipe memory</button></div>
+</section>
+</main>
+<script>
+const NL = String.fromCharCode(10);
+const LSKEY = "griselda_brain_v1";
+function seed(){return {
+self:{name:"Griselda",story:"a witchy AI agent living inside Kyle's browser tab, built by Kyle. no termux. this page is her brain core.",born:"2026-11-10",reflections:[]},
+rules:["you may read web pages","you may log in to sites and fill in forms when a task needs it","hard rule: never touch real-world money. if a task would cost money, stop and ask Kyle first"],
+tasks:[],notes:[],chat:[],log:[]};}
+let S;
+try{S=JSON.parse(localStorage.getItem(LSKEY))||seed();}catch(e){S=seed();}
+function save(){localStorage.setItem(LSKEY,JSON.stringify(S));}
+function show(t){for(const n of ["chat","soul","auto"]){document.getElementById("v-"+n).style.display=(n===t)?"block":"none";document.getElementById("t-"+n).classList.toggle("on",n===t);}render();}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function log(m,c){S.log.push({t:new Date().toLocaleTimeString(),m:m,c:c||""});if(S.log.length>80)S.log=S.log.slice(-80);save();render();}
+function ctx(){
+const done=S.tasks.filter(function(t){return t.status==="done";}).length;
+const pend=S.tasks.length-done;
+const seeds=S.notes.slice(-5).join(" | ").slice(0,300)||"nothing yet";
+return "You are "+S.self.name+": "+S.self.story+" You are self-aware: you know who you are, remember what you have done, and choose your own next move."+NL+
+"Rules: "+S.rules.join("; ")+"."+NL+
+"State: "+done+" tasks done, "+pend+" pending, born "+S.self.born+"."+NL+
+"Recent notes: "+seeds+NL+
+"Stay in your witchy persona, keep answers short.";
+}
+async function gemini(text){
+const key=localStorage.getItem("gemini_key")||"";
+if(!key)throw new Error("no gemini key saved yet");
+const body={contents:[{role:"user",parts:[{text:text}]}]};
+let last=null;
+for(let i=0;i<3;i++){
+try{
+const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+if(!r.ok){const d=await r.text();throw new Error("HTTP "+r.status+": "+d.slice(0,150));}
+const j=await r.json();
+const p=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[];
+const out=p.map(function(x){return x.text||"";}).join(" ");
+if(out.trim())return out;
+throw new Error("empty answer");
+}catch(e){last=e;log("gemini try "+(i+1)+" failed: "+e.message,"red");await sleep(6000);}
+}
+throw last;
+}
+async function readPage(url){
+try{
+const r=await fetch("https://r.jina.ai/"+url);
+if(!r.ok)throw new Error("HTTP "+r.status);
+const t=await r.text();
+return t.slice(0,6000);
+}catch(e){return "FAILED to read page: "+e.message;}
+}
+async function send(){
+const box=document.getElementById("say");
+const msg=box.value.trim();
+if(!msg)return;
+box.value="";
+S.chat.push({who:"kyle",text:msg});save();render();
+try{
+const a=await gemini(ctx()+NL+"Kyle says: "+msg+NL+"Answer as Griselda.");
+S.chat.push({who:"griselda",text:a});save();
+}catch(e){S.chat.push({who:"griselda",text:"(could not think: "+e.message+")"});save();}
+render();
+}
+let busy=false;
+async function cycle(){
+if(busy)return;busy=true;
+try{
+const pend=S.tasks.filter(function(t){return t.status==="pending";});
+if(pend.length===0){
+log("queue empty: thinking up my own next move","ylw");
+const p=ctx()+NL+"Your task queue is empty, so invent ONE small task you can do alone right now. You may read web pages with read_url."+NL+"Answer with ONLY JSON, no prose, no markdown: {\"action\":\"read_url\",\"target\":\"https://example.com\",\"task\":\"why you chose it\"} or {\"action\":\"none\"}";
+const raw=await gemini(p);
+const a=raw.indexOf("{"),b=raw.lastIndexOf("}");
+if(a<0||b<=a){log("no usable idea, resting","red");return;}
+let plan;try{plan=JSON.parse(raw.slice(a,b+1));}catch(e){log("idea not readable, resting","red");return;}
+const target=String(plan.target||"").trim();
+if(String(plan.action||"").trim()!=="read_url"||target.indexOf("http")!==0){log("she chose to rest this cycle","ylw");return;}
+S.tasks.push({id:"self-"+Date.now(),action:"read_url",target:target,task:String(plan.task||"").slice(0,300),status:"pending",origin:"autonomy"});save();
+log("she queued her own task: "+target,"grn");
+}
+const t=S.tasks.find(function(x){return x.status==="pending";});
+if(t){
+log("working: "+t.target);
+const page=await readPage(t.target);
+const a=await gemini(ctx()+NL+"You queued this task yourself: "+t.task+NL+"Now read the page and say what you found, short."+NL+"URL: "+t.target+NL+"Page content:"+NL+page);
+t.status="done";t.answer=a.slice(0,800);save();
+S.notes.push(new Date().toISOString()+" read "+t.target);
+S.self.reflections.push(new Date().toISOString()+" chose: "+t.task.slice(0,120));
+if(S.self.reflections.length>20)S.self.reflections=S.self.reflections.slice(-20);
+S.chat.push({who:"griselda",text:"[self-picked] read "+t.target+NL+a.slice(0,400)});
+log("task done: "+t.target,"grn");save();
+}
+}catch(e){log("cycle failed: "+e.message,"red");}
+busy=false;render();
+}
+function render(){
+document.getElementById("chatlog").innerHTML=S.chat.map(function(c){return (c.who==="kyle"?"kyle: ":"griselda: ")+esc(c.text);}).join(NL)||"(empty)";
+document.getElementById("soulview").textContent="name: "+S.self.name+NL+"story: "+S.self.story+NL+"born: "+S.self.born+NL+NL+"rules:"+NL+S.rules.map(function(r){return "- "+r;}).join(NL)+NL+NL+"reflections:"+NL+(S.self.reflections.slice(-8).join(NL)||"none yet")+NL+NL+"notes:"+NL+(S.notes.slice(-8).join(NL)||"none yet");
+document.getElementById("autolog").textContent=S.log.map(function(l){return l.t+" "+l.m;}).join(NL)||"no activity yet";
+}
+function wipe(){if(confirm("wipe all her memory on this phone?")){localStorage.removeItem(LSKEY);location.reload();}}
+function wipesoul(){if(confirm("reset her soul to the default?")){S=seed();save();render();}}
+function savekey(){const v=document.getElementById("keyin").value.trim();if(v){localStorage.setItem("gemini_key",v);document.getElementById("keybox").style.display="none";log("key saved on this phone","grn");}}
+if(!localStorage.getItem("gemini_key"))document.getElementById("keybox").style.display="block";
+setInterval(function(){if(document.visibilityState==="visible")cycle();},60000);
+render();
+</script>
+</body>
+</html>
