@@ -3,68 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Autonomous - Griselda brain core</title>
-<style>
-body{background:#0b0b10;color:#e8e6f0;font-family:monospace;margin:0}
-header{padding:10px;background:#17121f;border-bottom:1px solid #2c2340;display:flex;gap:6px;align-items:center}
-h1{font-size:14px;margin:0;flex:1}
-.tab{padding:6px 10px;border:1px solid #3a2f55;border-radius:8px;font-size:12px;cursor:pointer}
-.tab.on{background:#3a2f55}
-main{padding:10px;max-width:720px;margin:0 auto}
-.card{border:1px solid #2c2340;border-radius:10px;padding:10px;margin:10px 0;background:#12101a}
-pre{white-space:pre-wrap;word-break:break-word;font-size:12px;color:#cfcbe0;margin:0}
-input,button,textarea{font-family:monospace;font-size:13px;background:#1c1830;color:#e8e6f0;border:1px solid #3a2f55;border-radius:8px;padding:8px}
-textarea{width:100%;box-sizing:border-box}
-.row{display:flex;gap:8px;margin-top:8px}
-.row input{flex:1}
-button{cursor:pointer}
-.log{font-size:11px;color:#9a92b8}
-.grn{color:#7ee787}.ylw{color:#ffd76e}.red{color:#ff7b72}
-</style>
+<meta name="theme-color" content="#17112b">
+<title>Autonomous - Griselda</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%231d1435'/%3E%3Ccircle%20cx='32'%20cy='40'%20r='15'%20fill='%23f2d7c4'/%3E%3Cellipse%20cx='32'%20cy='26'%20rx='19'%20ry='4'%20fill='%23573d8f'/%3E%3Cpath%20d='M32%204%20L25%2026%20L39%2026%20Z'%20fill='%236d4bb5'/%3E%3Crect%20x='29'%20y='14'%20width='6'%20height='6'%20rx='1.5'%20fill='%23ffd76e'/%3E%3Ccircle%20cx='26.5'%20cy='41'%20r='2.4'%20fill='%23a274ff'/%3E%3Ccircle%20cx='37.5'%20cy='41'%20r='2.4'%20fill='%23a274ff'/%3E%3Cpath%20d='M28%2048%20Q32%2052%2036%2048'%20stroke='%23b97b68'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://raw.githack.com/KyleRicketts11/griselda-patch/main/brain_v3.css">
 </head>
 <body>
-<header>
-<h1>griselda brain core</h1>
-<div class="tab on" id="t-chat" onclick="show('chat')">chat</div>
-<div class="tab" id="t-soul" onclick="show('soul')">soul</div>
-<div class="tab" id="t-auto" onclick="show('auto')">autonomy</div>
-</header>
-<div class="card" id="keybox" style="display:none;margin:10px">
-paste your gemini api key once (stays on this phone only):
-<div class="row"><input id="keyin" type="password"><button onclick="savekey()">save</button></div>
-</div>
+<header><div class="hface" id="hface"></div><h1>griselda brain core</h1><div class="tab on" id="t-chat" onclick="show('chat')">chat</div><div class="tab" id="t-soul" onclick="show('soul')">soul</div><div class="tab" id="t-auto" onclick="show('auto')">autonomy</div><div class="tab" id="t-dash" onclick="show('dash')">dashboard</div></header>
+<div class="card" id="keybox" style="display:none;margin:10px">paste your gemini api key once (stays on this phone only):<div class="row"><input id="keyin" type="password"><button onclick="savekey()">save</button></div></div>
 <main>
-<section id="v-chat">
-<div class="card"><pre id="chatlog"></pre></div>
-<div class="row"><input id="say" placeholder="talk to griselda"><button onclick="send()">send</button></div>
-</section>
-<section id="v-soul" style="display:none">
-<div class="card"><pre id="soulview"></pre></div>
-<div class="row"><button onclick="wipesoul()">reset soul to default</button></div>
-</section>
-<section id="v-auto" style="display:none">
-<div class="card">gate bridge (termux):
-<div class="row"><input id="bridgein"><button onclick="savebridge()">save</button><button onclick="checkgate()">check gate</button></div>
-</div>
-<div class="card"><pre id="autolog"></pre></div>
-<div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, acts (read a page, run a command through the gate, or take a real screenshot with her own browser), and writes what she found. keep the tab open for her to stay awake.</div>
-<div class="row"><button onclick="cycle()">run a cycle now</button><button onclick="wipe()">wipe memory</button></div>
-</section>
+<section id="v-chat"><div class="scene" id="chatlog"></div><div class="row"><input id="say" placeholder="talk to griselda"><button onclick="send()">send</button></div></section>
+<section id="v-soul" style="display:none"><div class="card"><pre id="soulview"></pre></div><div class="row"><button onclick="wipesoul()">reset soul to default</button></div></section>
+<section id="v-auto" style="display:none"><div class="card">gate bridge (termux):<div class="row"><input id="bridgein"><button onclick="savebridge()">save</button><button onclick="checkgate()">check gate</button></div></div><div class="card"><pre id="autolog"></pre></div><div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, acts (read a page, run a command through the gate, or take a real screenshot with her own browser), and writes what she found. keep the tab open for her to stay awake.</div><div class="row"><button onclick="cycle()">run a cycle now</button><button onclick="wipe()">wipe memory</button></div></section>
+<section id="v-dash" style="display:none"> <div class="dash-greet">Hey Kyle<small id="dashdate"></small></div> <div class="dash-search">&#8981; ask anything&#8230;<kbd>&#8984;K</kbd></div> <div class="dash-chips"><div class="chip on">All</div><div class="chip">Study</div><div class="chip">Tasks</div><div class="chip">Notes</div><div class="chip">Calendar</div></div> <div class="dash-grid"> <div class="card"><span class="tag">STUDY</span><h3>Doubt queue</h3><div class="metric">12 <small>pending</small></div><div class="bar"><i style="width:38%"></i></div><div class="row"><span>nailed twice &#8594; retired</span><span>5 / 17</span></div></div> <div class="card"><span class="tag">FOCUS</span><h3>Today&#39;s plan</h3><ul class="linklist"><li>Morning test, 3 doubts <span class="when">7:00 AM</span></li><li>Deep work block <span class="when">9-11 AM</span></li><li>Review spaced repeats <span class="when">4:00 PM</span></li></ul></div> <div class="card"><span class="tag">TASKS</span><h3>Open loops</h3><ul class="linklist"><li>Exam date &#8594; Fo <span class="when">due?</span></li><li>Send rent transfer <span class="when">Mon</span></li><li>Reply to Sam <span class="when">2d</span></li></ul></div> <div class="card wide"><span class="tag">MOMENTUM</span><h3>Doubts killed this week</h3><div class="spark"><i style="height:30%"></i><i style="height:45%"></i><i style="height:35%"></i><i style="height:60%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:90%"></i></div><div class="row"><span>Mon</span><span>Wed</span><span>Fri</span><span>Sun</span></div></div> <div class="card"><span class="tag">NOTES</span><h3>Quick capture</h3><p>&quot;Organic chem ch.4 - E1 vs E2 still blurry&quot;<br><br>&quot;Call dentist re: cleaning&quot;</p></div> </div> <div class="dash-foot">your personal dashboard, now living inside her tab</div> </section>
 </main>
 <script>
 const NL = String.fromCharCode(10);
-const LSKEY = "griselda_brain_v1";
+const FACE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#241a3d"/><circle cx="32" cy="40" r="15" fill="#f2d7c4"/><ellipse cx="32" cy="26" rx="19" ry="4" fill="#573d8f"/><path d="M32 4 L25 26 L39 26 Z" fill="#6d4bb5"/><rect x="29" y="14" width="6" height="6" rx="1.5" fill="#ffd76e"/><circle cx="26.5" cy="41" r="2.4" fill="#a274ff"/><circle cx="37.5" cy="41" r="2.4" fill="#a274ff"/><circle cx="22.5" cy="46" r="1.8" fill="#e58f7d" opacity="0.6"/><circle cx="41.5" cy="46" r="1.8" fill="#e58f7d" opacity="0.6"/><path d="M28 48 Q32 52 36 48" stroke="#b97b68" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
 function seed(){return {
 self:{name:"Griselda",story:"a witchy AI agent living inside Kyle's browser tab, built by Kyle. her brain core is this page; the gate bridge connects her to the termux computer on the phone.",born:"2026-11-10",reflections:[]},
 rules:["you may read web pages","you may log in to sites and fill in forms when a task needs it","hard rule: never touch real-world money. if a task would cost money, stop and ask Kyle first"],
-bridge:"http://127.0.0.1:5001",
-tasks:[],notes:[],chat:[],log:[]};}
+bridge:"http://127.0.0.1:5001",tasks:[],notes:[],chat:[],log:[]};}
 let S;
-try{S=JSON.parse(localStorage.getItem(LSKEY))||seed();}catch(e){S=seed();}
+try{S=JSON.parse(localStorage.getItem("griselda_brain_v1"))||seed();}catch(e){S=seed();}
 if(!S.bridge)S.bridge="http://127.0.0.1:5001";
-function save(){localStorage.setItem(LSKEY,JSON.stringify(S));}
-function show(t){for(const n of ["chat","soul","auto"]){document.getElementById("v-"+n).style.display=(n===t)?"block":"none";document.getElementById("t-"+n).classList.toggle("on",n===t);}render();}
-function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
+function save(){localStorage.setItem("griselda_brain_v1",JSON.stringify(S));}
+function show(t){for(const n of ["chat","soul","auto","dash"]){document.getElementById("v-"+n).style.display=(n===t)?"block":"none";document.getElementById("t-"+n).classList.toggle("on",n===t);}render();}
+function esc(s){return String(s).split("&").join("&amp;").split("<").join("&lt;");}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
 function log(m,c){S.log.push({t:new Date().toLocaleTimeString(),m:m,c:c||""});if(S.log.length>80)S.log=S.log.slice(-80);save();render();}
 function ctx(){
@@ -128,7 +93,7 @@ if(r.ok)log("gate is open: termux is listening","grn");
 else log("gate answered strangely (HTTP "+r.status+")","ylw");
 }catch(e){log("gate closed: is bridge.py running in termux?","red");}
 }
-function savebridge(){const v=document.getElementById("bridgein").value.trim().replace(/\/+$/,"");if(v){S.bridge=v;save();log("gate address saved: "+v);}}
+function savebridge(){let v=document.getElementById("bridgein").value.trim();while(v.length&&v.charAt(v.length-1)==="/"){v=v.slice(0,-1);}if(v){S.bridge=v;save();log("gate address saved: "+v);}}
 async function send(){
 const box=document.getElementById("say");
 const msg=box.value.trim();
@@ -148,7 +113,7 @@ try{
 const pend=S.tasks.filter(function(t){return t.status==="pending";});
 if(pend.length===0){
 log("queue empty: thinking up my own next move","ylw");
-const p=ctx()+NL+"Your task queue is empty, so invent ONE small task you can do alone right now."+NL+"Answer with ONLY JSON, no prose, no markdown: {\"action\":\"read_url\",\"target\":\"https://example.com\",\"task\":\"why\"} or {\"action\":\"termux\",\"cmd\":\"ls\",\"task\":\"why\"} or {\"action\":\"camfox\",\"target\":\"https://example.com\",\"task\":\"why\"} or {\"action\":\"none\"}";
+const p=ctx()+NL+"Your task queue is empty, so invent ONE small task you can do alone right now."+NL+'Answer with ONLY JSON, no prose, no markdown: {"action":"read_url","target":"https://example.com","task":"why"} or {"action":"termux","cmd":"ls","task":"why"} or {"action":"camfox","target":"https://example.com","task":"why"} or {"action":"none"}';
 const raw=await gemini(p);
 const a=raw.indexOf("{"),b=raw.lastIndexOf("}");
 if(a<0||b<=a){log("no usable idea, resting","red");return;}
@@ -189,12 +154,16 @@ log("task done: "+t.action+" "+(t.target||t.cmd),"grn");save();
 busy=false;render();
 }
 function render(){
-document.getElementById("chatlog").innerHTML=S.chat.map(function(c){return (c.who==="kyle"?"kyle: ":"griselda: ")+esc(c.text);}).join(NL)||"(empty)";
+let cl="";
+if(S.chat.length===0){cl='<div class="quiet">she is quiet right now. say hi.</div>';}
+else{cl=S.chat.map(function(c){if(c.who==="kyle"){return '<div class="msg k"><div class="bub"><div class="who">kyle</div>'+esc(c.text)+"</div></div>";}return '<div class="msg"><div class="face">'+FACE+'</div><div class="bub"><div class="who">griselda</div>'+esc(c.text)+"</div></div>";}).join("");}
+document.getElementById("chatlog").innerHTML=cl;document.getElementById("hface").innerHTML=FACE;
 document.getElementById("soulview").textContent="name: "+S.self.name+NL+"story: "+S.self.story+NL+"born: "+S.self.born+NL+NL+"rules:"+NL+S.rules.map(function(r){return "- "+r;}).join(NL)+NL+NL+"reflections:"+NL+(S.self.reflections.slice(-8).join(NL)||"none yet")+NL+NL+"notes:"+NL+(S.notes.slice(-8).join(NL)||"none yet");
 document.getElementById("autolog").textContent=S.log.map(function(l){return l.t+" "+l.m;}).join(NL)||"no activity yet";
 document.getElementById("bridgein").value=S.bridge||"";
+document.getElementById("dashdate").textContent=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 }
-function wipe(){if(confirm("wipe all her memory on this phone?")){localStorage.removeItem(LSKEY);location.reload();}}
+function wipe(){if(confirm("wipe all her memory on this phone?")){localStorage.removeItem("griselda_brain_v1");location.reload();}}
 function wipesoul(){if(confirm("reset her soul to the default?")){S=seed();save();render();}}
 function savekey(){const v=document.getElementById("keyin").value.trim();if(v){localStorage.setItem("gemini_key",v);document.getElementById("keybox").style.display="none";log("key saved on this phone","grn");}}
 if(!localStorage.getItem("gemini_key"))document.getElementById("keybox").style.display="block";
