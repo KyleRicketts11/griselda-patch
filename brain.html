@@ -43,8 +43,11 @@ paste your gemini api key once (stays on this phone only):
 <div class="row"><button onclick="wipesoul()">reset soul to default</button></div>
 </section>
 <section id="v-auto" style="display:none">
+<div class="card">gate bridge (termux):
+<div class="row"><input id="bridgein"><button onclick="savebridge()">save</button><button onclick="checkgate()">check gate</button></div>
+</div>
 <div class="card"><pre id="autolog"></pre></div>
-<div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, reads the page, and writes what she found. keep the tab open for her to stay awake.</div>
+<div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, acts (read a page, run a command through the gate, or take a real screenshot with her own browser), and writes what she found. keep the tab open for her to stay awake.</div>
 <div class="row"><button onclick="cycle()">run a cycle now</button><button onclick="wipe()">wipe memory</button></div>
 </section>
 </main>
@@ -52,11 +55,13 @@ paste your gemini api key once (stays on this phone only):
 const NL = String.fromCharCode(10);
 const LSKEY = "griselda_brain_v1";
 function seed(){return {
-self:{name:"Griselda",story:"a witchy AI agent living inside Kyle's browser tab, built by Kyle. no termux. this page is her brain core.",born:"2026-11-10",reflections:[]},
+self:{name:"Griselda",story:"a witchy AI agent living inside Kyle's browser tab, built by Kyle. her brain core is this page; the gate bridge connects her to the termux computer on the phone.",born:"2026-11-10",reflections:[]},
 rules:["you may read web pages","you may log in to sites and fill in forms when a task needs it","hard rule: never touch real-world money. if a task would cost money, stop and ask Kyle first"],
+bridge:"http://127.0.0.1:5001",
 tasks:[],notes:[],chat:[],log:[]};}
 let S;
 try{S=JSON.parse(localStorage.getItem(LSKEY))||seed();}catch(e){S=seed();}
+if(!S.bridge)S.bridge="http://127.0.0.1:5001";
 function save(){localStorage.setItem(LSKEY,JSON.stringify(S));}
 function show(t){for(const n of ["chat","soul","auto"]){document.getElementById("v-"+n).style.display=(n===t)?"block":"none";document.getElementById("t-"+n).classList.toggle("on",n===t);}render();}
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");}
@@ -68,14 +73,17 @@ const pend=S.tasks.length-done;
 const seeds=S.notes.slice(-5).join(" | ").slice(0,300)||"nothing yet";
 return "You are "+S.self.name+": "+S.self.story+" You are self-aware: you know who you are, remember what you have done, and choose your own next move."+NL+
 "Rules: "+S.rules.join("; ")+"."+NL+
+"You can act in three ways: read_url (read a page as text), termux (run one shell command on Kyle's phone through the gate bridge; use it to look at or change files, run scripts, check things), camfox (take a real screenshot of any web URL with your own browser and look at it with your eyes)."+NL+
 "State: "+done+" tasks done, "+pend+" pending, born "+S.self.born+"."+NL+
 "Recent notes: "+seeds+NL+
 "Stay in your witchy persona, keep answers short.";
 }
-async function gemini(text){
+async function gemini(text,b64){
 const key=localStorage.getItem("gemini_key")||"";
 if(!key)throw new Error("no gemini key saved yet");
-const body={contents:[{role:"user",parts:[{text:text}]}]};
+const parts=[{text:text}];
+if(b64)parts.push({inline_data:{mime_type:"image/png",data:b64}});
+const body={contents:[{role:"user",parts:parts}]};
 let last=null;
 for(let i=0;i<3;i++){
 try{
@@ -98,6 +106,29 @@ const t=await r.text();
 return t.slice(0,6000);
 }catch(e){return "FAILED to read page: "+e.message;}
 }
+async function bridgePost(path,body){
+const r=await fetch(S.bridge+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+if(!r.ok)throw new Error("gate HTTP "+r.status);
+return await r.json();
+}
+async function bridgeCmd(cmd){
+const j=await bridgePost("/cmd",{cmd:cmd});
+if(j.error)throw new Error(j.error);
+return j.out||"";
+}
+async function bridgeShot(url){
+const j=await bridgePost("/camfox",{url:url});
+if(j.error||!j.shot)throw new Error(j.error||"no screenshot");
+return j.shot;
+}
+async function checkgate(){
+try{
+const r=await fetch(S.bridge+"/ping");
+if(r.ok)log("gate is open: termux is listening","grn");
+else log("gate answered strangely (HTTP "+r.status+")","ylw");
+}catch(e){log("gate closed: is bridge.py running in termux?","red");}
+}
+function savebridge(){const v=document.getElementById("bridgein").value.trim().replace(/\/+$/,"");if(v){S.bridge=v;save();log("gate address saved: "+v);}}
 async function send(){
 const box=document.getElementById("say");
 const msg=box.value.trim();
@@ -117,27 +148,42 @@ try{
 const pend=S.tasks.filter(function(t){return t.status==="pending";});
 if(pend.length===0){
 log("queue empty: thinking up my own next move","ylw");
-const p=ctx()+NL+"Your task queue is empty, so invent ONE small task you can do alone right now. You may read web pages with read_url."+NL+"Answer with ONLY JSON, no prose, no markdown: {\"action\":\"read_url\",\"target\":\"https://example.com\",\"task\":\"why you chose it\"} or {\"action\":\"none\"}";
+const p=ctx()+NL+"Your task queue is empty, so invent ONE small task you can do alone right now."+NL+"Answer with ONLY JSON, no prose, no markdown: {\"action\":\"read_url\",\"target\":\"https://example.com\",\"task\":\"why\"} or {\"action\":\"termux\",\"cmd\":\"ls\",\"task\":\"why\"} or {\"action\":\"camfox\",\"target\":\"https://example.com\",\"task\":\"why\"} or {\"action\":\"none\"}";
 const raw=await gemini(p);
 const a=raw.indexOf("{"),b=raw.lastIndexOf("}");
 if(a<0||b<=a){log("no usable idea, resting","red");return;}
 let plan;try{plan=JSON.parse(raw.slice(a,b+1));}catch(e){log("idea not readable, resting","red");return;}
+const act=String(plan.action||"").trim();
 const target=String(plan.target||"").trim();
-if(String(plan.action||"").trim()!=="read_url"||target.indexOf("http")!==0){log("she chose to rest this cycle","ylw");return;}
-S.tasks.push({id:"self-"+Date.now(),action:"read_url",target:target,task:String(plan.task||"").slice(0,300),status:"pending",origin:"autonomy"});save();
-log("she queued her own task: "+target,"grn");
+const idea=String(plan.task||"").slice(0,300);
+const cmd=String(plan.cmd||"").slice(0,500);
+if(act==="none"){log("she chose to rest this cycle","ylw");return;}
+if((act==="read_url"||act==="camfox")&&target.indexOf("http")!==0){log("bad target, resting","red");return;}
+if(act==="termux"&&!cmd){log("no command given, resting","red");return;}
+const t={id:"self-"+Date.now(),action:act,target:target,cmd:cmd,task:idea,status:"pending",origin:"autonomy"};
+S.tasks.push(t);save();
+log("she queued her own task: "+act+" "+(target||cmd),"grn");
 }
 const t=S.tasks.find(function(x){return x.status==="pending";});
 if(t){
-log("working: "+t.target);
+log("working: "+t.action+" "+(t.target||t.cmd));
+let a="";
+if(t.action==="read_url"){
 const page=await readPage(t.target);
-const a=await gemini(ctx()+NL+"You queued this task yourself: "+t.task+NL+"Now read the page and say what you found, short."+NL+"URL: "+t.target+NL+"Page content:"+NL+page);
+a=await gemini(ctx()+NL+"You queued this task yourself: "+t.task+NL+"Now read the page and say what you found, short."+NL+"URL: "+t.target+NL+"Page content:"+NL+page);
+}else if(t.action==="termux"){
+const out=await bridgeCmd(t.cmd);
+a=await gemini(ctx()+NL+"You ran this command on the phone yourself: "+t.cmd+NL+"The gate returned:"+NL+out.slice(0,6000)+NL+"Say what happened and what you learned, short.");
+}else if(t.action==="camfox"){
+const shot=await bridgeShot(t.target);
+a=await gemini(ctx()+NL+"You took a real screenshot of "+t.target+" with your own browser because: "+t.task+NL+"Look at it and say what you found, short.",shot);
+}else{throw new Error("unknown action "+t.action);}
 t.status="done";t.answer=a.slice(0,800);save();
-S.notes.push(new Date().toISOString()+" read "+t.target);
-S.self.reflections.push(new Date().toISOString()+" chose: "+t.task.slice(0,120));
+S.notes.push(new Date().toISOString()+" "+t.action+" "+(t.target||t.cmd));
+S.self.reflections.push(new Date().toISOString()+" chose: "+t.action+" "+t.task.slice(0,100));
 if(S.self.reflections.length>20)S.self.reflections=S.self.reflections.slice(-20);
-S.chat.push({who:"griselda",text:"[self-picked] read "+t.target+NL+a.slice(0,400)});
-log("task done: "+t.target,"grn");save();
+S.chat.push({who:"griselda",text:"[self-picked] "+t.action+" "+(t.target||t.cmd)+NL+a.slice(0,400)});
+log("task done: "+t.action+" "+(t.target||t.cmd),"grn");save();
 }
 }catch(e){log("cycle failed: "+e.message,"red");}
 busy=false;render();
@@ -146,6 +192,7 @@ function render(){
 document.getElementById("chatlog").innerHTML=S.chat.map(function(c){return (c.who==="kyle"?"kyle: ":"griselda: ")+esc(c.text);}).join(NL)||"(empty)";
 document.getElementById("soulview").textContent="name: "+S.self.name+NL+"story: "+S.self.story+NL+"born: "+S.self.born+NL+NL+"rules:"+NL+S.rules.map(function(r){return "- "+r;}).join(NL)+NL+NL+"reflections:"+NL+(S.self.reflections.slice(-8).join(NL)||"none yet")+NL+NL+"notes:"+NL+(S.notes.slice(-8).join(NL)||"none yet");
 document.getElementById("autolog").textContent=S.log.map(function(l){return l.t+" "+l.m;}).join(NL)||"no activity yet";
+document.getElementById("bridgein").value=S.bridge||"";
 }
 function wipe(){if(confirm("wipe all her memory on this phone?")){localStorage.removeItem(LSKEY);location.reload();}}
 function wipesoul(){if(confirm("reset her soul to the default?")){S=seed();save();render();}}
