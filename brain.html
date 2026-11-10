@@ -19,7 +19,7 @@
 <main>
 <section id="v-chat"><div class="scene" id="chatlog"></div><div class="row"><input id="say" placeholder="talk to griselda"><button onclick="send()">send</button></div></section>
 <section id="v-soul" style="display:none"><div class="card"><pre id="soulview"></pre></div><div class="row"><button onclick="wipesoul()">reset soul to default</button></div></section>
-<section id="v-auto" style="display:none"><div class="card">gate bridge (termux):<div class="row"><input id="bridgein"><button onclick="savebridge()">save</button><button onclick="checkgate()">check gate</button><button onclick="fixgate()">fix gate</button></div><div class="row"><button onclick="setkey()">set api key</button></div></div><div class="card"><pre id="autolog"></pre></div><div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, acts (read a page, run a command through the gate, or take a real screenshot with her own browser), and writes what she found. keep the tab open for her to stay awake.</div><div class="row"><button onclick="cycle()">run a cycle now</button><button onclick="wipe()">wipe memory</button></div></section>
+<section id="v-auto" style="display:none"><div class="card">gate bridge (termux):<div class="row"><input id="bridgein" placeholder="http://127.0.0.1:5001"><button onclick="savebridge()">save</button><button onclick="checkgate()">check gate</button><button onclick="fixgate()">fix gate</button></div><div class="row"><button onclick="setkey()">set api key</button></div></div><div class="card"><pre id="autolog"></pre></div><div class="card log">she thinks while this tab is open: one cycle per minute, she picks her own task when the queue is empty, acts (read a page, run a command through the gate, or take a real screenshot with her own browser), and writes what she found. keep the tab open for her to stay awake.</div><div class="row"><button onclick="cycle()">run a cycle now</button><button onclick="wipe()">wipe memory</button></div></section>
 <section id="v-dash" style="display:none"> <div class="dash-greet">Hey Kyle<small id="dashdate"></small></div> <div class="dash-search">&#8981; ask anything&#8230;<kbd>&#8984;K</kbd></div> <div class="dash-chips"><div class="chip on">All</div><div class="chip">Study</div><div class="chip">Tasks</div><div class="chip">Notes</div><div class="chip">Calendar</div></div> <div class="dash-grid"> <div class="card"><span class="tag">STUDY</span><h3>Doubt queue</h3><div class="metric">12 <small>pending</small></div><div class="bar"><i style="width:38%"></i></div><div class="row"><span>nailed twice &#8594; retired</span><span>5 / 17</span></div></div> <div class="card"><span class="tag">FOCUS</span><h3>Today&#39;s plan</h3><ul class="linklist"><li>Morning test, 3 doubts <span class="when">7:00 AM</span></li><li>Deep work block <span class="when">9-11 AM</span></li><li>Review spaced repeats <span class="when">4:00 PM</span></li></ul></div> <div class="card"><span class="tag">TASKS</span><h3>Open loops</h3><ul class="linklist"><li>Exam date &#8594; Fo <span class="when">due?</span></li><li>Send rent transfer <span class="when">Mon</span></li><li>Reply to Sam <span class="when">2d</span></li></ul></div> <div class="card wide"><span class="tag">MOMENTUM</span><h3>Doubts killed this week</h3><div class="spark"><i style="height:30%"></i><i style="height:45%"></i><i style="height:35%"></i><i style="height:60%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:90%"></i></div><div class="row"><span>Mon</span><span>Wed</span><span>Fri</span><span>Sun</span></div></div> <div class="card"><span class="tag">NOTES</span><h3>Quick capture</h3><p>&quot;Organic chem ch.4 - E1 vs E2 still blurry&quot;<br><br>&quot;Call dentist re: cleaning&quot;</p></div> </div> <div class="dash-foot">your personal dashboard, now living inside her tab</div> </section>
 </main>
 <script>
@@ -55,17 +55,24 @@ if(!key)throw new Error("no gemini key saved yet");
 const parts=[{text:text}];
 if(b64)parts.push({inline_data:{mime_type:"image/png",data:b64}});
 const body={contents:[{role:"user",parts:parts}]};
+const models=["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"];
 let last=null;
-for(let i=0;i<3;i++){
+for(const m of models){
+for(let i=0;i<2;i++){
 try{
-const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+m+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
 if(!r.ok){const d=await r.text();throw new Error("HTTP "+r.status+": "+d.slice(0,150));}
 const j=await r.json();
 const p=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts)||[];
 const out=p.map(function(x){return x.text||"";}).join(" ");
 if(out.trim())return out;
 throw new Error("empty answer");
-}catch(e){last=e;log("gemini try "+(i+1)+" failed: "+e.message,"red");await sleep(6000);}
+}catch(e){
+last=e;log("gemini "+m+" try "+(i+1)+" failed: "+e.message,"red");
+if(String(e.message).indexOf("404")>=0||String(e.message).indexOf("no longer available")>=0)break;
+await sleep(4000);
+}
+}
 }
 throw last;
 }
