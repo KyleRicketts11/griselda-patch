@@ -57,6 +57,7 @@ const parts=[{text:text}];
 if(b64)parts.push({inline_data:{mime_type:"image/png",data:b64}});
 const body={contents:[{role:"user",parts:parts}]};
 const models=["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"];
+const tried=[];
 let last=null;
 for(const m of models){
 for(let i=0;i<2;i++){
@@ -69,13 +70,14 @@ const out=p.map(function(x){return x.text||"";}).join(" ");
 if(out.trim())return out;
 throw new Error("empty answer");
 }catch(e){
-last=e;log("gemini "+m+" try "+(i+1)+" failed: "+e.message,"red");
+last=e;tried.push(m+" "+(i+1)+" "+String(e.message).slice(0,80));
+log("gemini "+m+" try "+(i+1)+" failed: "+e.message,"red");
 if(String(e.message).indexOf("404")>=0||String(e.message).indexOf("no longer available")>=0)break;
 await sleep(4000);
 }
 }
 }
-throw last;
+throw new Error("all models failed, here is each one: "+tried.join(" | "));
 }
 async function think(t,b){THINK=true;render();try{return await gemini(t,b);}finally{THINK=false;render();}}
 async function readPage(url){
