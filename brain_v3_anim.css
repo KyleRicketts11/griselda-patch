@@ -1,0 +1,6 @@
+@keyframes gBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes gBlink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.08)}}
+@keyframes gSway{0%,100%{transform:rotate(0)}50%{transform:rotate(3deg)}}
+.msg .face svg{animation:gBob 3.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.hface svg{animation:gSway 5s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.msg .face svg ellipse[fill="#e3dc63"]{animation:gBlink 4.5s infinite;transform-box:fill-box;transform-origin:center}
