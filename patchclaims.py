@@ -121,15 +121,21 @@ for idx in jobs:
             raise SystemExit(1)
     elif idx == h_rt[0]:
         dl = lines[idx]
-        if 'name' not in dl or 'args' not in dl:
+        if dl.find('(') < 0 or dl.rfind(')') < 0:
             print('ABORT: unexpected run_tool signature: ' + dl.strip())
             raise SystemExit(1)
+        inner = dl[dl.find('(') + 1:dl.rfind(')')]
+        parts = [x.strip().split(':')[0].strip() for x in inner.split(',') if x.strip()]
+        if len(parts) < 2 or parts[0] != 'name':
+            print('ABORT: unexpected run_tool signature: ' + dl.strip())
+            raise SystemExit(1)
+        val = parts[1]
         di = indent_of(dl)
         guard = [
             di + '    if name == "save_claim":',
-            di + '        if not isinstance(args, dict):',
-            di + '            args = {"claim": str(args)}',
-            di + '        return _save_claim(args)',
+            di + '        if not isinstance(' + val + ', dict):',
+            di + '            ' + val + ' = {"claim": str(' + val + ')}',
+            di + '        return _save_claim(' + val + ')',
         ]
         before = [''] + SAVE_FN + ['']
         lines[idx:idx] = before
