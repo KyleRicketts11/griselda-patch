@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# probe3.py - find every Google model on the griselda key with its own free daily bucket.
+# probe3.py v3 - find every Google model on the griselda key with its own free daily bucket.
 # Free quota is PER MODEL per day: each extra alive model is more thinks a day for griselda.
-# v2: scans every small file in griselda-brain for the key (the key is not a plain assignment),
-# validates each candidate against the models list endpoint, then probes the queued models.
+# v3: the key lives in the GEMINI_API_KEY env var (never in code), so read the environment
+# first, then shell profiles, then scan the griselda folder as a last resort.
 import json, os, re, urllib.request, urllib.error
 
 HOME = os.path.expanduser("~")
@@ -10,6 +10,26 @@ BRAIN = os.path.join(HOME, "griselda-brain")
 KEY_PAT = re.compile(r"((?:AIza|AQ\.)[A-Za-z0-9_\-]{20,})")
 cands = []
 seen = set()
+
+
+def add(k):
+    k = (k or "").strip()
+    if k and k not in seen:
+        seen.add(k)
+        cands.append(k)
+
+
+add(os.environ.get("GEMINI_API_KEY"))
+
+for prof in (os.path.join(HOME, ".bashrc"), os.path.join(HOME, ".profile"), os.path.join(HOME, ".bash_profile"), os.path.join(BRAIN, ".env")):
+    try:
+        if os.path.exists(prof):
+            txt = open(prof, "r", encoding="utf-8", errors="replace").read()
+            m = re.search(r"GEMINI_API_KEY[^A-Za-z0-9]*((?:AIza|AQ\.)[A-Za-z0-9_\-]{20,})", txt)
+            if m:
+                add(m.group(1))
+    except Exception:
+        pass
 
 for root, dirs, files in os.walk(BRAIN):
     dirs[:] = [d for d in dirs if not d.startswith('.')]
@@ -22,13 +42,11 @@ for root, dirs, files in os.walk(BRAIN):
         except Exception:
             continue
         for m in KEY_PAT.finditer(txt):
-            k = m.group(1)
-            if k not in seen:
-                seen.add(k)
-                cands.append(k)
+            add(m.group(1))
 
 if not cands:
-    print('ABORT: no Google-style key (AIza... or AQ....) found anywhere in griselda-brain')
+    print('ABORT: no key found. GEMINI_API_KEY is not set in this shell and no key file exists.')
+    print('run this from the same shell you start her from, or export GEMINI_API_KEY first')
     raise SystemExit(1)
 print('found %d key candidate(s), tails: %s' % (len(cands), ' '.join(c[-4:] for c in cands)))
 
