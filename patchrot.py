@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# patchrot.py - model rotation for griselda: when one Google model's daily
+# patchrot.py v2 - model rotation for griselda: when one Google model's daily
 # bucket runs dry, she hops to the next model on the same key instead of
-# stalling. Reads an optional models.txt (one model per line, first line is
-# preferred); without it she starts on the current MODEL and falls through
-# the default list. Models that answer 404 are skipped for the rest of the run.
+# stalling. v1 spliced its block at the end-of-file anchor and broke that
+# block's indentation; v2 inserts before the top-level def run_loop line
+# instead, which is always safe. Reads an optional models.txt (one model per
+# line, first line preferred); models that answer 404 are skipped for the run.
 import os, re, shutil, py_compile
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -62,6 +63,10 @@ def main():
     if len(re.findall(r"^def call_gemini\(", src, re.M)) != 1:
         print("ABORT: expected exactly one def call_gemini, found %d" % len(re.findall(r"^def call_gemini\(", src, re.M)))
         return 1
+    anchor_pat = re.compile(r"^def run_loop\(", re.M)
+    if len(anchor_pat.findall(src)) != 1:
+        print("ABORT: expected exactly one top-level def run_loop line, found %d" % len(anchor_pat.findall(src)))
+        return 1
     site_pat = re.compile(r"(?<!def )call_gemini\(")
     hits = site_pat.findall(src)
     if len(hits) < 1:
@@ -72,12 +77,7 @@ def main():
     shutil.copy2(TARGET, BACKUP)
     print("backup: " + os.path.basename(BACKUP))
     src2 = site_pat.sub("call_gemini_rot(", src)
-    anchor = "raise SystemExit(main())"
-    if src2.count(anchor) != 1:
-        shutil.copy2(BACKUP, TARGET)
-        print("ABORT: anchor raise SystemExit(main()) found %d times, backup restored" % src2.count(anchor))
-        return 1
-    src2 = src2.replace(anchor, ROT_CODE + NL + NL + anchor)
+    src2 = anchor_pat.sub(lambda m: ROT_CODE + NL + NL + m.group(0), src2, count=1)
     open(TARGET, "w").write(src2)
     try:
         py_compile.compile(TARGET, doraise=True)
