@@ -134,7 +134,7 @@ def main():
         obj = parse_action(text)
         ok, got = score(t, obj)
         print("EVAL " + str(i) + "/" + str(len(tasks)) + " " + t["id"] + " expect " + t["expect"]["action"] + " got " + got + " " + ("PASS" if ok else "FAIL"))
-        results.append({"id": t["id"], "ok": ok, "got": got})
+        results.append({"id": t["id"], "ok": ok, "got": got, "act": obj})
     passed = sum(1 for r in results if r["ok"])
     print("EVAL SUMMARY: " + str(passed) + "/" + str(len(results)) + " passed")
     for r in results:
