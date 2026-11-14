@@ -161,7 +161,7 @@ def main():
     for r in results:
         if not r["ok"]:
             print("FAILED " + r["id"] + " got " + r["got"])
-    trace = {"when": datetime.datetime.utcnow().isoformat() + "Z", "mode": "all" if mode_all else "daily", "pass": passed, "total": len(results), "results": results}
+    trace = {"when": datetime.datetime.now(datetime.timezone.utc).isoformat(), "mode": "all" if mode_all else "daily", "pass": passed, "total": len(results), "results": results}
     with open(os.path.join(BASE, "eval_history.jsonl"), "a") as f:
         f.write(json.dumps(trace) + NL)
     print("trace appended to eval_history.jsonl")
