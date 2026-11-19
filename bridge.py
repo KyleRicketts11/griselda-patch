@@ -40,6 +40,18 @@ class H(BaseHTTPRequestHandler):
         self.wfile.write(body)
     def do_GET(self):
         path = self.path.split("?")[0]
+        if path == "/dash" or path.startswith("/dash/"):
+            target = "http://127.0.0.1:5000" + self.path[5:]
+            try:
+                req = urllib.request.Request(target, headers={"User-Agent": "griselda-gate"})
+                r = urllib.request.urlopen(req, timeout=15)
+                data = r.read()
+                ct = r.headers.get("Content-Type") or "application/json"
+                r.close()
+                self._send(200, data, ct)
+            except Exception as e:
+                self._send(200, json.dumps({"offline": str(e)}).encode())
+            return
         if path in ("/", "/brain.html", "/index.html", "/brain"):
             ensure_assets()
             p = os.path.join(ROOT, "brain.html")
@@ -101,5 +113,5 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
-print("griselda gate bridge v2 on http://127.0.0.1:" + str(PORT) + " (brain page + her local files)")
+print("griselda gate bridge v3 on http://127.0.0.1:5001 (brain page + her files + her dashboard live)")
 HTTPServer(("127.0.0.1", PORT), H).serve_forever()
