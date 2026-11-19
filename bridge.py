@@ -1,40 +1,68 @@
-import json, os, base64, subprocess, urllib.request
+import json, os, base64, subprocess, urllib.request, re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 ROOT = os.path.expanduser("~/griselda-brain")
 PORT = 5001
 BRAIN_URL = "https://raw.githubusercontent.com/KyleRicketts11/griselda-patch/main/brain.html"
+CSS_FILES = ["brain_v3.css","brain_v3_bg.css","brain_v3_bg2.css","brain_v3_anim.css","brain_v3_move.css","brain_v3_bg3.css"]
+CDN_BASE = "https://cdn.jsdelivr.net/gh/KyleRicketts11/griselda-patch@main/"
+CT = {".html":"text/html; charset=utf-8",".css":"text/css; charset=utf-8",".js":"application/javascript",".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".svg":"image/svg+xml",".json":"application/json",".txt":"text/plain; charset=utf-8"}
 
-def get_brain():
-    p = os.path.join(ROOT, "brain.html")
+def fetch(url, dest):
     try:
-        data = urllib.request.urlopen(BRAIN_URL, timeout=20).read()
-        with open(p, "wb") as f:
+        req = urllib.request.Request(url, headers={"User-Agent": "griselda-gate"})
+        data = urllib.request.urlopen(req, timeout=20).read()
+        tmp = dest + ".tmp"
+        with open(tmp, "wb") as f:
             f.write(data)
+        os.replace(tmp, dest)
+        return True
     except Exception:
-        if not os.path.exists(p):
-            raise
-    with open(p, "rb") as f:
-        return f.read()
+        return False
+
+def ensure_assets():
+    p = os.path.join(ROOT, "brain.html")
+    if not os.path.exists(p):
+        fetch(BRAIN_URL, p)
+    for c in CSS_FILES:
+        cp = os.path.join(ROOT, c)
+        if not os.path.exists(cp):
+            fetch(CDN_BASE + c, cp)
 
 class H(BaseHTTPRequestHandler):
     def _send(self, code, body, ctype="application/json"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
     def do_GET(self):
-        if self.path in ("/", "/brain.html", "/index.html"):
-            try:
-                self._send(200, get_brain(), "text/html; charset=utf-8")
-            except Exception as e:
-                self._send(500, json.dumps({"error": str(e)}).encode())
-        elif self.path == "/ping":
+        path = self.path.split("?")[0]
+        if path in ("/", "/brain.html", "/index.html", "/brain"):
+            ensure_assets()
+            p = os.path.join(ROOT, "brain.html")
+            if os.path.exists(p):
+                with open(p, "rb") as f:
+                    self._send(200, f.read(), "text/html; charset=utf-8")
+            else:
+                self._send(500, json.dumps({"error": "brain.html missing and download failed"}).encode())
+            return
+        if path == "/ping":
             self._send(200, b'{"ok":true}')
-        else:
-            self._send(404, b'{"error":"not found"}')
+            return
+        m = re.match(r"^/([A-Za-z0-9_.\-]+)$", path)
+        if m:
+            name = m.group(1)
+            if not name.startswith("."):
+                p = os.path.join(ROOT, name)
+                if os.path.isfile(p):
+                    ext = os.path.splitext(name)[1].lower()
+                    with open(p, "rb") as f:
+                        self._send(200, f.read(), CT.get(ext, "application/octet-stream"))
+                    return
+        self._send(404, b'{"error":"not found"}')
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
         try:
@@ -73,5 +101,5 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
-print("griselda gate bridge on http://127.0.0.1:" + str(PORT) + "/brain.html")
+print("griselda gate bridge v2 on http://127.0.0.1:" + str(PORT) + " (brain page + her local files)")
 HTTPServer(("127.0.0.1", PORT), H).serve_forever()
