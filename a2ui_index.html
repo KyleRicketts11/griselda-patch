@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>griselda a2ui test</title>
+<style>
+  body { background:#17111f; color:#e8e0f0; font-family:monospace; padding:16px; }
+  h3 { color:#b98bff; }
+  #status { color:#8f8aa0; font-size:12px; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<h3>griselda's a2ui test page</h3>
+<div id="status">loading renderer from CDN...</div>
+<div id="host"></div>
+<script type="module">
+window.addEventListener('error', function(e) {
+  document.getElementById('status').textContent = 'JS ERROR: ' + (e.message || e.type);
+});
+import {MessageProcessor} from 'https://esm.sh/@a2ui/web_core';
+import {basicCatalog} from 'https://esm.sh/@a2ui/web_core/catalogs/basic/v1';
+import 'https://esm.sh/@a2ui/lit';
+
+const statusEl = document.getElementById('status');
+const host = document.getElementById('host');
+const proc = new MessageProcessor([basicCatalog]);
+let surface = null;
+try {
+  proc.onSurfaceCreated(function(s) {
+    if (s.id === 'witch-test') { surface = s; }
+  });
+  proc.processMessages([{
+    version: '1.0',
+    createSurface: {
+      surfaceId: 'witch-test',
+      catalogId: basicCatalog.id,
+      components: [
+        {id: 'root', component: 'Column', children: ['title', 'card1', 'btn1']},
+        {id: 'title', component: 'Text', text: "griselda's a2ui surface is alive"},
+        {id: 'card1', component: 'Card', child: 'cardtext'},
+        {id: 'cardtext', component: 'Text', text: 'this card was drawn by the a2ui renderer, not hand-written html'},
+        {id: 'btn1label', component: 'Text', text: 'tap me'},
+        {id: 'btn1', component: 'Button', child: 'btn1label', action: {event: {name: 'test_tap'}}}
+      ]
+    }
+  }]);
+  statusEl.textContent = 'messages processed ok.';
+} catch (e) {
+  statusEl.textContent = 'ERROR: ' + e.message;
+}
+
+function draw() {
+  if (!surface) return;
+  var el = host.querySelector('a2ui-surface');
+  if (!el) { el = document.createElement('a2ui-surface'); host.appendChild(el); }
+  el.surface = surface;
+  statusEl.textContent = 'surface rendered.';
+}
+setInterval(draw, 300);
+</script>
+</body>
+</html>
