@@ -27,8 +27,6 @@ const host = document.getElementById('host');
 const proc = new MessageProcessor([basicCatalog]);
 const surfaces = {};
 const deleted = {};
-let seen = parseInt(localStorage.getItem('a2ui_seen') || '0', 10);
-let strokes = 0;
 
 proc.onSurfaceCreated(function(s) {
   surfaces[s.id] = s;
@@ -40,17 +38,13 @@ async function poll() {
     const r = await fetch('messages.log', {cache: 'no-store'});
     if (!r.ok) throw new Error('no log yet');
     const lines = (await r.text()).split('\n').filter(function(x) { return x.trim(); });
-    if (lines.length < seen) { seen = 0; }
-    for (let i = seen; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
       const msg = JSON.parse(lines[i]);
       if (msg.deleteSurface) { deleted[msg.deleteSurface.surfaceId] = true; }
       if (msg.createSurface) { delete deleted[msg.createSurface.surfaceId]; }
       proc.processMessages([msg]);
-      strokes = i + 1;
     }
-    seen = lines.length;
-    localStorage.setItem('a2ui_seen', String(seen));
-    statusEl.textContent = strokes ? ('live: ' + seen + ' strokes on file') : 'bridge armed, waiting for griselda to draw';
+    statusEl.textContent = lines.length ? ('live: ' + lines.length + ' strokes on file') : 'bridge armed, waiting for griselda to draw';
   } catch (e) {
     statusEl.textContent = 'waiting for the first draw...';
   }
