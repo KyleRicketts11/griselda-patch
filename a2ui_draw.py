@@ -3,10 +3,10 @@
 
 usage: python draw.py <verb> [args...]
 verbs:
-  text <string>            add a line of text
-  header <string>          add a heading line
-  card <title> <body>      add a card with a title and body
-  button <label>           add a tappable button (fires event button_pressed)
+  text words...            add a line of text (quotes optional, words join)
+  header words...          add a heading line
+  card <title> <body...>   add a card with a title and body
+  button words...          add a tappable button (fires event button_pressed)
   clear                    wipe the screen (history stays on file)
   reset                    wipe screen AND history file
 every draw goes through the gate as one plain command.
@@ -33,7 +33,7 @@ def save_state(s):
 
 def emit(msg):
     with open(LOG, "a") as f:
-        f.write(json.dumps(msg) + "\n")
+        f.write(json.dumps(msg) + chr(10))
 
 def push(state, new_components):
     if not state.get("created"):
@@ -67,15 +67,17 @@ def main():
         print("reset")
         return
     if verb == "text" and len(args) >= 2:
+        text = " ".join(args[1:])
         state["n"] += 1
         cid = "t%d" % state["n"]
         state["children"].append(cid)
-        push(state, [{"id": cid, "component": "Text", "text": args[1]}])
+        push(state, [{"id": cid, "component": "Text", "text": text}])
     elif verb == "header" and len(args) >= 2:
+        text = " ".join(args[1:])
         state["n"] += 1
         cid = "h%d" % state["n"]
         state["children"].append(cid)
-        push(state, [{"id": cid, "component": "Text", "text": args[1]}])
+        push(state, [{"id": cid, "component": "Text", "text": text}])
     elif verb == "card" and len(args) >= 3:
         state["n"] += 1
         base = "c%d" % state["n"]
@@ -84,7 +86,7 @@ def main():
             {"id": base, "component": "Card", "child": base + "col"},
             {"id": base + "col", "component": "Column", "children": [base + "t", base + "b"]},
             {"id": base + "t", "component": "Text", "text": args[1]},
-            {"id": base + "b", "component": "Text", "text": args[2]},
+            {"id": base + "b", "component": "Text", "text": " ".join(args[2:])},
         ])
     elif verb == "button" and len(args) >= 2:
         state["n"] += 1
@@ -93,7 +95,7 @@ def main():
         push(state, [
             {"id": base, "component": "Button", "child": base + "l",
              "action": {"event": {"name": "button_pressed"}}},
-            {"id": base + "l", "component": "Text", "text": args[1]},
+            {"id": base + "l", "component": "Text", "text": " ".join(args[1:])},
         ])
     else:
         print("unknown verb or missing args. verbs: text header card button clear reset")
