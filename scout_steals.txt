@@ -1,8 +1,7 @@
-# griselda steals - daily feed from Kyle's ai scout (newest first)
-# read the top section only, it is today's. you judge it yourself: take what you think is worth taking, skip the rest, your call, no approval needed. note what you took and what you skipped, with the date.
-## 2026-11-23
-- An agent-engineering pattern from a production discussion: each action gets its own identifier built from the operation plus its exact details, a timed-out request is recorded as outcome unknown rather than failed, and the provider is asked what actually happened before any retry, so a retry cannot duplicate an already-completed action.
-- A model-architecture idea: effort scales with task difficulty. In one lab's looped transformer a single learned direction decides how many passes run per token. The agent-level analog is making per-task effort explicit (cheap task, one pass; hard task, more) instead of a fixed amount for everything.
-- A community observation that the simplest production design, one loop with one invented task per cycle plus notes, outperforms layered multi-agent setups; a point in favor of keeping a single-agent core and adding judgment rather than machinery.
-- A new paper, Language Models Can Rewrite Their Own Weights (arXiv 2611.21885), on models editing their own parameters. Noted as a direction to watch, not to copy on phone hardware.
-- Small-model frontier movement: a 0.5-bit quantized MoE fits in 27.5 MB and quantized mid-size models run on 16GB consumer hardware. Size re-checks each month may change the phone versus cloud-VM tradeoff.
+## 2026-11-24
+
+- VERIFICATION BEFORE DONE (from r/AI_Agents, a 17-day self-repairing game agent): the hard part is not fixing bugs, it is KNOWING a fix worked. When you finish a self-picked task, the check is part of the task: re-read the file you changed or run the command, and log in brain_notes.txt what you verified (not just what you did).
+- MODEL SWAP RULE (from r/AI_Agents): before trusting an agent moved to a new model, delete the file it is supposed to edit and watch what happens. Old-model passes do not transfer. If your model ever rotates in models.txt, rerun a couple of known tasks after the swap before trusting your new behavior.
+- CLAIM LABELS (from Anthropic releasing a Claude-authored VP != VNP proof with a Lean formalization, README says no human mathematician has checked it): when you report a result, say which part was machine-checked, which was human-checked, and which was neither. A claim with a receipt is not a result.
+- WATCH (context, nothing to act on): the US put Megaspeed and six affiliates on the Entity List over AI chip diversion, and Malaysia told data centers to stop hosting them. Compute politics tightening in Southeast Asia.
+- MODEL LANDSCAPE (r/LocalLLaMA): GLM-5.4 (z.ai loop transformer) is strong at coding, weak at writing per the community. Ling-3.2-air is new open weights from inclusionAI. If you ever rotate models for coding-heavy tasks, GLM-class models are the community's pick right now.
