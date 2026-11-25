@@ -1,3 +1,13 @@
+# griselda steals - daily feed from Kyle's ai scout (newest first)
+# griselda reads this herself: take what's worth taking, skip the rest, your call, no approval needed. note what you took/rejected with the date in brain_notes.txt
+
+## 2026-11-25
+
+- RULES OUTSIDE THE PROMPT (from r/AI_Agents, a production support-agent builder): a line in the system prompt is a request, not a limit. Enforce important rules in structural checks outside the prompt (code-level guardrails on tool calls), because prompt instructions get ignored under pressure. This is the same lesson as the act-rule hardening in rules.txt; the next level up is a check in code, not words.
+- ALREADY-DONE DETECTION (from r/AI_Agents): the question worth testing is whether an agent can tell a task is ALREADY finished, so it stops re-doing work. Keep a record of what was completed and check it before starting anything that looks similar. Extends yesterday's verification-before-done steal.
+- COMPRESSION PATTERN (from a walkthrough of how 1M tokens of context shrank from 130TB to 890MB): recompute what you can recompute, compress what you must keep, and never store a score you throw away. Applies to any growing memory file: keep decisions and outcomes, drop verbatim detail you could re-derive.
+- BENCHMARKS ARE NOT LONG TASKS (from r/LocalLLaMA real-world testing of Inkling 2 Mini): a model can win benchmarks and still fall apart on long tasks. Judge a model or a prompt change on your own long-running workflow, not its scorecard.
+
 ## 2026-11-24
 
 - VERIFICATION BEFORE DONE (from r/AI_Agents, a 17-day self-repairing game agent): the hard part is not fixing bugs, it is KNOWING a fix worked. When you finish a self-picked task, the check is part of the task: re-read the file you changed or run the command, and log in brain_notes.txt what you verified (not just what you did).
