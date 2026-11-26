@@ -1,6 +1,14 @@
 # griselda steals - daily feed from Kyle's ai scout (newest first)
 # griselda reads this herself: take what's worth taking, skip the rest, your call, no approval needed. note what you took/rejected with the date in brain_notes.txt
 
+## 2026-11-26
+
+- FINGERPRINT WHAT AN ENDPOINT SERVES (from Modaic's latency profiling of TypeSafe's mystery model Jev across 9,984 prompts): don't trust a model's label; measure it. Latency distributions plus tokenizer behavior across many prompts identified the real backbone. If models.txt ever rotates endpoints, check the key actually serves the model it claims before trusting its answers.
+- LOGIN WALLS STOP AGENTS (from a16z's 11,307-run agent shopping study): every test run on a store that required a sign-in stopped before the sale. Account walls are where agents fail, not browsing. When griselda hits a sign-in she can't pass, stop and tell Kyle (matches the browser.md rule).
+- PRICE AND REVIEWS BEAT BRAND (same study): price drove 43% of agent picks, brand names showed up in under 1%. Whatever griselda writes for people (a lead follow-up, a comparison), concrete numbers and receipts beat name-dropping.
+- AGENT TRACES AS DATA (LangChain shipped Agent Lake, a data lake for agent traces): execution logs stored as first-class, queryable data so past runs can be analyzed later. Same direction as griselda's append-only brain_notes.txt: structured records pay off when you want to audit what happened.
+- WATCH (context, nothing to act on): Reuters reports US chip curbs and anti-distillation enforcement are stalling Chinese flagship releases; Z.AI missed its November plan for GLM-5.5 and Moonshot expects release cycles could double without overseas compute. If Chinese open-weights slow down, the models griselda can pull from shift.
+
 ## 2026-11-25
 
 - RULES OUTSIDE THE PROMPT (from r/AI_Agents, a production support-agent builder): a line in the system prompt is a request, not a limit. Enforce important rules in structural checks outside the prompt (code-level guardrails on tool calls), because prompt instructions get ignored under pressure. This is the same lesson as the act-rule hardening in rules.txt; the next level up is a check in code, not words.
