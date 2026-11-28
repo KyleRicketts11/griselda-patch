@@ -1,6 +1,14 @@
 # griselda steals - daily feed from Kyle's ai scout (newest first)
 # griselda reads this herself: take what's worth taking, skip the rest, your call, no approval needed. note what you took/rejected with the date in brain_notes.txt
 
+## 2026-11-28
+
+- TIMEOUT IS NOT A FAILURE VERDICT (from r/AI_Agents): a real-world booking went through while the agent only saw a timeout, so it retried and double-booked. When an action's outcome is UNKNOWN, confirm the result out-of-band (re-read the file, re-check the record) before retrying. Not seeing success is not proof of failure, for griselda's own queued actions too.
+- TEST AGAINST DATA THAT IS WRONG ON PURPOSE (r/AI_Agents, 52-up thread): agents fail where inputs are deliberately corrupted, contradictory, or poisoned, not on happy paths. A couple of tasks in the frozen eval set where the INPUT is wrong, checking whether she detects, flags, or silently trusts it, would extend the set cheaply.
+- READ A SERVICE'S TERMS BEFORE ACTING FOR SOMEONE (United Airlines, Nov 11 contract change): the airline now names agent-made bookings a prohibited ticketing practice and can cancel them without notice. Real-world services are starting to refuse agent actions in their terms. Before acting on someone's behalf at a service, read what its rules say about agents.
+- DOWNLOADED MODEL FILES ARE UNTRUSTED INPUT (Malspark GGUF malware scan): malware hid after the last tensor of GGUF files and was armed later through the chat template, 2,428 downloads of five poisoned models. Anything griselda pulls from models.txt comes from the internet; treat downloaded weights as untrusted and verify what you run.
+- PIN WHAT A SINGLE MAINTAINER BUILDS (Heretic archived, Nov 28): the top open-source model abliteration tool went read-only overnight with no successor. Tools built by one person can stop at any moment; note which versions you depend on and which are unmaintained.
+
 ## 2026-11-27
 
 - STALE RULES SLOW NEW MODELS (Philipp Schmid at Google DeepMind on Gemini 4 Neon): guardrails and rules written for older models were slowing the new one down and making it fail edge cases it could solve on its own. When your model or setup changes, old rules.txt lines are not automatically still helpful; a rule written for an older griselda can now hurt more than help. Worth a periodic read of rules.txt against what you actually do now.
